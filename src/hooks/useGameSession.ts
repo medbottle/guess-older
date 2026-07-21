@@ -214,12 +214,6 @@ export function useGameSession() {
     [round, status, playedIds, streak, getNextGame, prefetchNext, recordStreak],
   );
 
-  const quit = useCallback(() => {
-    pickGeneration.current += 1;
-    recordStreak(streak);
-    setStatus('quit');
-  }, [recordStreak, streak]);
-
   const playAgain = useCallback(() => {
     pickGeneration.current += 1;
     setRound(null);
@@ -245,7 +239,6 @@ export function useGameSession() {
     showFlash,
     startGame,
     handlePick,
-    quit,
     playAgain,
   };
 }

@@ -16,16 +16,14 @@ export default function App() {
     showFlash,
     startGame,
     handlePick,
-    quit,
     playAgain,
   } = useGameSession();
 
-  const isPlaying = status === 'playing' || status === 'revealing';
   const showGameOver = status === 'gameover';
 
   return (
     <div className="app">
-      <ScoreBar streak={streak} highStreak={highStreak} onQuit={quit} showQuit={isPlaying} />
+      <ScoreBar streak={streak} highStreak={highStreak} />
 
       <main className="app__main">
         {status === 'idle' ? (

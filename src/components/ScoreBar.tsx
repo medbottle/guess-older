@@ -1,11 +1,9 @@
 type ScoreBarProps = {
   streak: number;
   highStreak: number;
-  onQuit: () => void;
-  showQuit: boolean;
 };
 
-export function ScoreBar({ streak, highStreak, onQuit, showQuit }: ScoreBarProps) {
+export function ScoreBar({ streak, highStreak }: ScoreBarProps) {
   return (
     <header className="score-bar">
       <div className="score-bar__brand">

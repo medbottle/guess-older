@@ -1,7 +1,7 @@
 type GameOverProps = {
   streak: number;
   highStreak: number;
-  reason: 'wrong' | 'quit';
+  reason: 'wrong';
   onPlayAgain: () => void;
 };
 
