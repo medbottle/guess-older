@@ -8,7 +8,7 @@ A browser game where you compare video game release dates. One date is shown, on
 2. One release date is visible; the other is hidden.
 3. Click the game you believe released **earlier**. So, the game that is older.
 4. If you're right, the other game stays (with its date revealed) and a new challenger appears.
-5. Wrong guess or quit ends the run and shows your final streak.
+5. Wrong guess or quitting ends the run and shows your final streak.
 
 ## Made with
 
