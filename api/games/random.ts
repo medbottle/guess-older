@@ -12,6 +12,7 @@ type Game = {
   id: number;
   name: string;
   released: string;
+  tba: boolean;
   background_image: string;
 };
 
