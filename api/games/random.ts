@@ -30,7 +30,7 @@ function isValidGame(
 }
 
 const MIN_OBSCURE_PAGE = 15;
-const MAX_OBSCURE_PAGE = 100;
+const MAX_OBSCURE_PAGE = 50;
 
 async function fetchGamesPage(page: number) {
   if (!RAWG_API_KEY) {
