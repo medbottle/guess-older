@@ -186,6 +186,7 @@ button {
   color: inherit;
   text-align: left;
   cursor: pointer;
+  padding: 0;
   transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
@@ -220,7 +221,10 @@ button {
 }
 
 .game-card__image-wrap {
-  aspect-ratio: 16 / 9;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9; /* or 1 / 1 for squares */
+  overflow: hidden;
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -229,6 +233,7 @@ button {
   height: 100%;
   object-fit: cover;
   display: block;
+  
 }
 
 .game-card__placeholder {
