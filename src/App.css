@@ -82,9 +82,6 @@ button {
   font-weight: 700;
 }
 
-.score-bar__streak--best {
-}
-
 .score-bar__streak--best .score-bar__streak-value {
   color: #fff;
 }
