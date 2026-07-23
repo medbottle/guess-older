@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import type { Game, Side } from '../types';
+import type { PublicGame, Side } from '../types';
 
 type GameCardProps = {
-  game: Game;
+  game: PublicGame & { released?: string };
   side: Side;
   revealed: boolean;
   disabled: boolean;
@@ -51,7 +51,7 @@ export function GameCard({ game, side, revealed, disabled, flash, onPick }: Game
           <h2 className="game-card__title" style={{ margin: "0px" }}>{game.name}</h2>
           <p style={{ margin: "0px 0px 5px 0px" }}>{game.developers}</p>
           <p className={`game-card__date${revealed ? '' : ' game-card__date--hidden'}`}>
-            {revealed ? formatDate(game.released) : 'XXX X, XXXX'}
+            {revealed && game.released ? formatDate(game.released) : 'XXX X, XXXX'}
           </p>
         </div>
       </div>

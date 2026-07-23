@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchInitialPair, fetchRandomGame } from '../api/games';
-import type { Feedback, Game, GameStatus, Round, Side } from '../types';
+import { fetchChallenger, fetchPair, submitPick } from '../api/games';
+import type { Feedback, Game, GameStatus, PublicGame, Round, Side } from '../types';
 import { getHighStreak, saveHighStreak } from '../utils/highScore';
 
 const REVEAL_BEFORE_FLASH_MS = 500;
@@ -10,40 +10,6 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
   });
-}
-
-function releaseTimestamp(date: string): number {
-  return new Date(`${date}T00:00:00`).getTime();
-}
-
-function isOlder(game: Game, other: Game): boolean {
-  return releaseTimestamp(game.released) < releaseTimestamp(other.released);
-}
-
-function getOlderSide(round: Round): Side {
-  return isOlder(round.left, round.right) ? 'left' : 'right';
-}
-
-async function ensureDistinctDates(
-  anchor: Game,
-  challenger: Game,
-  excludeIds: number[],
-): Promise<Game> {
-  if (challenger.released !== anchor.released) {
-    return challenger;
-  }
-
-  let exclude = [...excludeIds, anchor.id, challenger.id];
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const replacement = await fetchRandomGame(exclude);
-    if (replacement.released !== anchor.released) {
-      return replacement;
-    }
-    exclude = [...exclude, replacement.id];
-  }
-
-  throw new Error('Could not find games with different release dates');
 }
 
 export function useGameSession() {
@@ -56,8 +22,8 @@ export function useGameSession() {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [showFlash, setShowFlash] = useState(false);
   const [playedIds, setPlayedIds] = useState<number[]>([]);
-  const prefetchedGame = useRef<Game | null>(null);
-  const prefetchPromise = useRef<Promise<Game> | null>(null);
+  const prefetchedGame = useRef<PublicGame | null>(null);
+  const prefetchPromise = useRef<Promise<PublicGame> | null>(null);
   const pickGeneration = useRef(0);
 
   useEffect(() => {
@@ -73,8 +39,8 @@ export function useGameSession() {
     });
   }, []);
 
-  const prefetchNext = useCallback((excludeIds: number[]) => {
-    prefetchPromise.current = fetchRandomGame(excludeIds)
+  const prefetchNext = useCallback((anchorId: number, excludeIds: number[]) => {
+    prefetchPromise.current = fetchChallenger(anchorId, excludeIds)
       .then((game) => {
         prefetchedGame.current = game;
         return game;
@@ -86,30 +52,33 @@ export function useGameSession() {
       });
   }, []);
 
-  const getNextGame = useCallback(async (excludeIds: number[]): Promise<Game> => {
-    if (prefetchedGame.current && !excludeIds.includes(prefetchedGame.current.id)) {
-      const game = prefetchedGame.current;
-      prefetchedGame.current = null;
-      prefetchPromise.current = null;
-      return game;
-    }
-
-    if (prefetchPromise.current) {
-      try {
-        const game = await prefetchPromise.current;
-        if (!excludeIds.includes(game.id)) {
-          prefetchedGame.current = null;
-          prefetchPromise.current = null;
-          return game;
-        }
-      } catch {
+  const getNextChallenger = useCallback(
+    async (anchorId: number, excludeIds: number[]): Promise<PublicGame> => {
+      if (prefetchedGame.current && !excludeIds.includes(prefetchedGame.current.id)) {
+        const game = prefetchedGame.current;
         prefetchedGame.current = null;
         prefetchPromise.current = null;
+        return game;
       }
-    }
 
-    return fetchRandomGame(excludeIds);
-  }, []);
+      if (prefetchPromise.current) {
+        try {
+          const game = await prefetchPromise.current;
+          if (!excludeIds.includes(game.id)) {
+            prefetchedGame.current = null;
+            prefetchPromise.current = null;
+            return game;
+          }
+        } catch {
+          prefetchedGame.current = null;
+          prefetchPromise.current = null;
+        }
+      }
+
+      return fetchChallenger(anchorId, excludeIds);
+    },
+    [],
+  );
 
   const startGame = useCallback(async () => {
     setStatus('loading');
@@ -123,16 +92,14 @@ export function useGameSession() {
     pickGeneration.current += 1;
 
     try {
-      const [initialLeft, initialRight] = await fetchInitialPair([]);
-      const left = initialLeft;
-      const right = await ensureDistinctDates(left, initialRight, []);
+      const { left, right } = await fetchPair([]);
       const initialPlayedIds = [left.id, right.id];
 
       setRound({ left, right, revealedSide: 'left' });
       setPlayedIds(initialPlayedIds);
       setStreak(0);
       setStatus('playing');
-      prefetchNext(initialPlayedIds);
+      prefetchNext(left.id, initialPlayedIds);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start game');
       setStatus('idle');
@@ -147,18 +114,48 @@ export function useGameSession() {
 
       const currentRound = round;
       const currentPlayedIds = playedIds;
-      const olderSide = getOlderSide(currentRound);
-      const correct = side === olderSide;
-      const nextLeft = currentRound.right;
       const generation = pickGeneration.current + 1;
       pickGeneration.current = generation;
-      const nextGamePromise = getNextGame(currentPlayedIds).then((game) =>
-        ensureDistinctDates(nextLeft, game, currentPlayedIds),
-      );
 
       setStatus('revealing');
+
+      let pickResult;
+      try {
+        pickResult = await submitPick(
+          currentRound.left.id,
+          currentRound.right.id,
+          side,
+        );
+      } catch (err) {
+        if (pickGeneration.current !== generation) {
+          return;
+        }
+
+        setError(err instanceof Error ? err.message : 'Failed to submit pick');
+        setStatus('gameover');
+        return;
+      }
+
+      if (pickGeneration.current !== generation) {
+        return;
+      }
+
+      const nextLeft: Game = {
+        ...currentRound.right,
+        released: pickResult.rightReleased,
+      };
+      const nextGamePromise = getNextChallenger(nextLeft.id, currentPlayedIds);
+
+      setRound({
+        left: currentRound.left,
+        right: nextLeft,
+        revealedSide: currentRound.revealedSide,
+      });
       setRevealAll(true);
-      setFeedback({ correct, olderSide });
+      setFeedback({
+        correct: pickResult.correct,
+        olderSide: pickResult.olderSide,
+      });
       setShowFlash(false);
 
       await delay(REVEAL_BEFORE_FLASH_MS);
@@ -172,7 +169,7 @@ export function useGameSession() {
         return;
       }
 
-      if (!correct) {
+      if (!pickResult.correct) {
         recordStreak(streak);
         setStatus('gameover');
         return;
@@ -201,7 +198,7 @@ export function useGameSession() {
         setShowFlash(false);
         setStatus('playing');
 
-        prefetchNext(updatedPlayedIds);
+        prefetchNext(nextLeft.id, updatedPlayedIds);
       } catch (err) {
         if (pickGeneration.current !== generation) {
           return;
@@ -211,7 +208,7 @@ export function useGameSession() {
         setStatus('gameover');
       }
     },
-    [round, status, playedIds, streak, getNextGame, prefetchNext, recordStreak],
+    [round, status, playedIds, streak, getNextChallenger, prefetchNext, recordStreak],
   );
 
   const playAgain = useCallback(() => {
