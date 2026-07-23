@@ -4,7 +4,6 @@ type RawgGame = {
   id: number;
   name: string;
   released: string | null;
-  tba: boolean;
   background_image: string | null;
 };
 
@@ -12,8 +11,8 @@ type Game = {
   id: number;
   name: string;
   released: string;
-  tba: boolean;
   background_image: string;
+  developers: string;
 };
 
 const RAWG_API_KEY = process.env.RAWG_API_KEY;
@@ -25,7 +24,6 @@ function isValidGame(
   return (
     !excludeIds.has(game.id) &&
     Boolean(game.released) &&
-    !game.tba &&
     Boolean(game.background_image)
   );
 }
@@ -93,9 +91,33 @@ async function getRandomGame(excludeIds: number[]): Promise<Game> {
     );
 
     if (validGames.length) {
-      return validGames[
-        Math.floor(Math.random() * validGames.length)
-      ];
+      const game =
+        validGames[
+          Math.floor(Math.random() * validGames.length)
+        ];
+
+      const url = new URL(
+        `https://api.rawg.io/api/games/${game.id}`
+      );
+      url.searchParams.set("key", RAWG_API_KEY!);
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        throw new Error(
+          `RAWG API error: ${response.status}`
+        );
+      }
+
+      const details = await response.json();
+
+      return {
+        name: game.name,
+        released: game.released,
+        background_image: game.background_image,
+        developers:
+          details.developers?.[0]?.name ?? "Unknown",
+      };
     }
   }
 

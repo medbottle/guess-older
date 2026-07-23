@@ -3,6 +3,7 @@ export type Game = {
   name: string;
   released: string;
   background_image: string;
+  developers: string;
 };
 
 export type Side = 'left' | 'right';

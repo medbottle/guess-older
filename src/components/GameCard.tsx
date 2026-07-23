@@ -48,7 +48,8 @@ export function GameCard({ game, side, revealed, disabled, flash, onPick }: Game
           )}
         </div>
         <div className="game-card__body">
-          <h2 className="game-card__title">{game.name}</h2>
+          <h2 className="game-card__title" style={{ margin: "0px" }}>{game.name}</h2>
+          <p style={{ margin: "0px 0px 5px 0px" }}>{game.developers}</p>
           <p className={`game-card__date${revealed ? '' : ' game-card__date--hidden'}`}>
             {revealed ? formatDate(game.released) : 'XXX X, XXXX'}
           </p>
