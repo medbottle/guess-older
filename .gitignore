@@ -23,6 +23,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+scripts
+supabase
 
 .vercel
 .env*
