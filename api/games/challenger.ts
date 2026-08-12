@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   findChallenger,
+  parseDifficulty,
   parseExcludeIds,
   toPublicGame,
 } from "../lib/games.js";
@@ -23,7 +24,8 @@ export default async function handler(
     }
 
     const exclude = parseExcludeIds(req.query.exclude);
-    const challenger = await findChallenger(anchorId, exclude);
+    const difficulty = parseDifficulty(req.query.difficulty);
+    const challenger = await findChallenger(anchorId, exclude, difficulty);
 
     res.status(200).json(toPublicGame(challenger));
   } catch (err) {
