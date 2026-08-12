@@ -13,4 +13,5 @@ A browser game where you compare video game release dates. One date is shown, on
 ## Made with
 
 - React + TypeScript + Vite
-- [RAWG Video Games Database API](https://rawg.io/apidocs)
+- [IGDB API](https://api-docs.igdb.com/)
+- Vercel
