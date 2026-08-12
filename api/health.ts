@@ -6,7 +6,9 @@ export default function handler(
 ) {
   res.status(200).json({
     ok: true,
-    hasApiKey: Boolean(process.env.RAWG_API_KEY),
+    hasIgdb: Boolean(
+      process.env.IGDB_CLIENT_ID && process.env.IGDB_CLIENT_SECRET,
+    ),
     hasSupabase: Boolean(
       process.env.SUPABASE_URL &&
         (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_ANON_KEY),
