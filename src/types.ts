@@ -34,3 +34,5 @@ export type GameStatus =
   | 'playing'
   | 'revealing'
   | 'gameover';
+
+export type Difficulty = 'easy' | 'normal' | 'hard';
