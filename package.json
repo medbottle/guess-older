@@ -6,9 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:client": "vite",
-    "dev:server": "tsx watch server/index.ts",
+    "dev:server": "vercel dev --listen 3001",
     "build": "tsc && vite build",
-    "start": "tsx server/index.ts",
     "preview": "vite preview",
     "sync:games": "tsx scripts/sync-games.ts"
   },

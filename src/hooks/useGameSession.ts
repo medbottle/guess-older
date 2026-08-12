@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchChallenger, fetchPair, submitPick } from '../api/games';
-import type { Feedback, Game, GameStatus, PublicGame, Round, Side } from '../types';
+import type {
+  Difficulty,
+  Feedback,
+  Game,
+  GameStatus,
+  PublicGame,
+  Round,
+  Side,
+} from '../types';
 import { getHighStreak, saveHighStreak } from '../utils/highScore';
 
 const REVEAL_BEFORE_FLASH_MS = 500;
@@ -22,9 +30,11 @@ export function useGameSession() {
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [showFlash, setShowFlash] = useState(false);
   const [playedIds, setPlayedIds] = useState<number[]>([]);
+  const [difficulty, setDifficulty] = useState<Difficulty>('normal');
   const prefetchedGame = useRef<PublicGame | null>(null);
   const prefetchPromise = useRef<Promise<PublicGame> | null>(null);
   const pickGeneration = useRef(0);
+  const difficultyRef = useRef<Difficulty>('normal');
 
   useEffect(() => {
     return () => {
@@ -40,7 +50,11 @@ export function useGameSession() {
   }, []);
 
   const prefetchNext = useCallback((anchorId: number, excludeIds: number[]) => {
-    prefetchPromise.current = fetchChallenger(anchorId, excludeIds)
+    prefetchPromise.current = fetchChallenger(
+      anchorId,
+      excludeIds,
+      difficultyRef.current,
+    )
       .then((game) => {
         prefetchedGame.current = game;
         return game;
@@ -75,36 +89,41 @@ export function useGameSession() {
         }
       }
 
-      return fetchChallenger(anchorId, excludeIds);
+      return fetchChallenger(anchorId, excludeIds, difficultyRef.current);
     },
     [],
   );
 
-  const startGame = useCallback(async () => {
-    setStatus('loading');
-    setStreak(0);
-    setRevealAll(false);
-    setFeedback(null);
-    setShowFlash(false);
-    setError(null);
-    prefetchedGame.current = null;
-    prefetchPromise.current = null;
-    pickGeneration.current += 1;
-
-    try {
-      const { left, right } = await fetchPair([]);
-      const initialPlayedIds = [left.id, right.id];
-
-      setRound({ left, right, revealedSide: 'left' });
-      setPlayedIds(initialPlayedIds);
+  const startGame = useCallback(
+    async (nextDifficulty: Difficulty = 'normal') => {
+      setStatus('loading');
       setStreak(0);
-      setStatus('playing');
-      prefetchNext(left.id, initialPlayedIds);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start game');
-      setStatus('idle');
-    }
-  }, [prefetchNext]);
+      setRevealAll(false);
+      setFeedback(null);
+      setShowFlash(false);
+      setError(null);
+      setDifficulty(nextDifficulty);
+      difficultyRef.current = nextDifficulty;
+      prefetchedGame.current = null;
+      prefetchPromise.current = null;
+      pickGeneration.current += 1;
+
+      try {
+        const { left, right } = await fetchPair([], nextDifficulty);
+        const initialPlayedIds = [left.id, right.id];
+
+        setRound({ left, right, revealedSide: 'left' });
+        setPlayedIds(initialPlayedIds);
+        setStreak(0);
+        setStatus('playing');
+        prefetchNext(left.id, initialPlayedIds);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to start game');
+        setStatus('idle');
+      }
+    },
+    [prefetchNext],
+  );
 
   const handlePick = useCallback(
     async (side: Side) => {
@@ -234,6 +253,7 @@ export function useGameSession() {
     revealAll,
     feedback,
     showFlash,
+    difficulty,
     startGame,
     handlePick,
     playAgain,

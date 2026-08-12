@@ -1,22 +1,29 @@
-import type { Game, PickResult, PublicGame, Side } from '../types';
+import type { Difficulty, Game, PickResult, PublicGame, Side } from '../types';
 
 async function parseError(response: Response): Promise<string> {
   const data = (await response.json().catch(() => ({}))) as { error?: string };
   return data.error ?? 'Request failed';
 }
 
-function buildExcludeParams(excludeIds: number[]): string {
+function buildQueryParams(
+  excludeIds: number[],
+  difficulty?: Difficulty,
+): string {
   const params = new URLSearchParams();
   if (excludeIds.length > 0) {
     params.set('exclude', excludeIds.join(','));
+  }
+  if (difficulty) {
+    params.set('difficulty', difficulty);
   }
   return params.toString();
 }
 
 export async function fetchPair(
   excludeIds: number[] = [],
+  difficulty: Difficulty = 'normal',
 ): Promise<{ left: Game; right: PublicGame }> {
-  const query = buildExcludeParams(excludeIds);
+  const query = buildQueryParams(excludeIds, difficulty);
   const url = `/api/games/pair${query ? `?${query}` : ''}`;
   const response = await fetch(url);
 
@@ -30,10 +37,13 @@ export async function fetchPair(
 export async function fetchChallenger(
   anchorId: number,
   excludeIds: number[] = [],
+  difficulty: Difficulty = 'normal',
 ): Promise<PublicGame> {
-  const params = new URLSearchParams({ anchorId: String(anchorId) });
-  const exclude = buildExcludeParams(excludeIds);
-  if (exclude) {
+  const params = new URLSearchParams({
+    anchorId: String(anchorId),
+    difficulty,
+  });
+  if (excludeIds.length > 0) {
     params.set('exclude', excludeIds.join(','));
   }
 

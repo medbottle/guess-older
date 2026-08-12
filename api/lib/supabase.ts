@@ -6,6 +6,7 @@ export type DbGame = {
   released: string;
   background_image: string;
   developers: string;
+  added: number;
 };
 
 let client: SupabaseClient | null = null;
